@@ -16,6 +16,23 @@
 </div>
 
 ---
+> **This is a fork of [google/agents-cli](https://github.com/google/agents-cli) with added discovery + reliability guidance.**
+
+## What this fork adds
+
+- **NEW skill — `google-agents-cli-discovery`:** an RFC-style discovery interview that resolves every
+  requirement and technical decision *with* the user and writes a complete `.agents-cli-spec.md`
+  **before** scaffolding (Phase −1). Includes a spec template, a decision catalog, and
+  `spec-quality-lessons` (pin exact API contracts, layered single-responsibility design, a bottom-up
+  test pyramid, and a canonical file layout — what makes a downstream build loop converge).
+- **Updated `workflow`:** Phase 0 now deterministically gates on a complete spec and routes to the
+  discovery skill when the spec is missing or incomplete.
+- **Updated `deploy`:** a "Production Pitfalls & Lessons" section (validate against the data contract,
+  env/secrets as code, smoke-test first, pagination, regional config).
+- **Bundles 8 skills** (was 7).
+
+See `skills/README.md` → "Fork modifications" for the per-skill detail.
+---
 
 Turn your favorite coding assistant into an expert at building and deploying agents on Google Cloud.
 
