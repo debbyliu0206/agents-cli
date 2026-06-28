@@ -41,6 +41,42 @@ For deeper details, consult these reference files in `references/`:
 
 ---
 
+## Production Pitfalls & Lessons (Read First)
+
+Hard-won failure modes when shipping agentic and event-driven pipelines. Most cause **silent failures** — the deploy succeeds but the agent misbehaves — so prevention beats debugging. Each pitfall links to where the fix lives in this skill set.
+
+1. **Verify current API docs & data formats before writing integration code.**
+   - *Pitfall:* Relying on memory or stale LLM training data, producing a schema mismatch between event producer and consumer.
+   - *Fix:* Consult current docs first (training data is often out of date). For ADK/model specifics, fetch the live docs index (`curl https://adk.dev/llms.txt`) rather than guessing.
+
+2. **Validate against the data contract defined in your spec — that's the source of truth.**
+   - *Pitfall:* The pipeline's I/O schema lives only in code or people's heads, so producer and consumer drift apart and payloads mismatch silently.
+   - *Fix:* The contract is defined **upstream** in `.agents-cli-spec.md` during discovery/design (see `/google-agents-cli-discovery`, *Data Contracts & Pipeline I/O*) — build, eval, and deploy all reference that ground truth. At deploy time, validate each ingestion boundary against it (e.g. Pydantic) and reject mismatches loudly with `400 Bad Request` — never coerce to defaults.
+
+3. **Never swallow exceptions.**
+   - *Pitfall:* `try/except Exception: pass` masks parse failures; the agent proceeds with default values and root-cause analysis becomes impossible.
+   - *Fix:* Structured logging + distributed tracing; log the exact malformed payload and stack trace. See `/google-agents-cli-observability` (Cloud Trace & Logging).
+
+4. **Paginate state retrieval — no unbounded fetches.**
+   - *Pitfall:* The N+1 problem — looping `get` calls over an unbounded list blocks the thread and trips the Cloud Run request timeout as data grows.
+   - *Fix:* Always bound queries with `limit`/`offset`; fetch only the most recent 10–20 items so latency stays flat regardless of total size.
+
+5. **Manage env vars & secrets as code, not by hand.**
+   - *Pitfall:* Manual CLI env-var edits introduce syntax errors (missing commas, bad quoting) that concatenate variables and surface as cryptic `403 Permission Denied`.
+   - *Fix:* Keep config centralized in Infrastructure-as-Code (Terraform) and secrets in Secret Manager — see [Custom Infrastructure (Terraform)](#custom-infrastructure-terraform) and [Secret Manager](#secret-manager-for-api-credentials). Pass secrets via `agents-cli deploy --secrets`, not raw env vars.
+
+6. **Match regions across every service.**
+   - *Pitfall:* Cloud Run in one region calling an LLM endpoint in another → obscure `404`/`403` routing errors.
+   - *Fix:* Explicitly set and verify `GCP_LOCATION` (and equivalents) across all interconnected services so they share one regional control plane.
+
+7. **Smoke-test with a minimal trivial request first.**
+   - *Pitfall:* Debugging full, complex payloads in production before confirming the basics work.
+   - *Fix:* Send the simplest valid request first to confirm auth, connectivity, and permissions, *then* build up to the full payload. Use `agents-cli run --url <service-url> "ping"` — see [Testing Your Deployed Agent](#testing-your-deployed-agent).
+
+> **If something fails after deploy:** start with the [Troubleshooting](#troubleshooting) table — most production errors there map back to one of the pitfalls above.
+
+---
+
 ## Deployment Target Decision Matrix
 
 Choose the right deployment target based on your requirements:

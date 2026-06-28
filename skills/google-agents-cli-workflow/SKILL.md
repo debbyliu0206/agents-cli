@@ -38,7 +38,8 @@ Re-read the relevant skill **before** each phase — not after you've already st
 
 | Phase | Skill | When to load |
 |-------|-------|--------------|
-| 0 — Understand | — | No skill needed — read `.agents-cli-spec.md` if present, else clarify goals with the user |
+| −1 — Discover | `/google-agents-cli-discovery` | Load whenever `.agents-cli-spec.md` is missing or incomplete vs the spec template — runs the RFC interview and writes a complete spec |
+| 0 — Understand | — | Always check for `.agents-cli-spec.md` first: if missing/incomplete → Discover; if complete → read it as the source of truth |
 | 1 — Study samples | — | Check Notable Samples table below — clone and study matching samples before scaffolding |
 | 2 — Scaffold | `/google-agents-cli-scaffold` | Before creating or enhancing a project |
 | 3 — Build | `/google-agents-cli-adk-code` | Before writing agent code — API patterns, tools, callbacks, state |
@@ -77,11 +78,15 @@ The `vertexai` Python SDK package name is unchanged.
 
 ## Phase 0: Understand
 
-Before writing or scaffolding anything, understand what you're building.
+Before writing or scaffolding anything, you MUST have a complete spec. Run this gate **deterministically** — do not judge whether the user is "technical," and do not skip it:
 
-If `.agents-cli-spec.md` exists in the current directory, read it — it is your primary source of truth. Otherwise:
+1. **Check for the spec.** Does `.agents-cli-spec.md` exist in the current directory?
+2. **If it does NOT exist →** STOP and run `/google-agents-cli-discovery`. It interviews the user and writes the spec. Do not ask the questions ad hoc or fill in blanks yourself.
+3. **If it exists →** validate it against the discovery spec template (`/google-agents-cli-discovery` → `references/rfc-spec-template.md`): every required section present and resolved, no "TBD", and the "Unresolved questions" list empty.
+   - **Complete →** read it as your single source of truth and continue to Phase 1.
+   - **Incomplete or inconsistent →** STOP and run `/google-agents-cli-discovery` to fill the gaps before proceeding.
 
-Do NOT proceed to planning, scaffolding, or coding. Ask the user the questions below and wait for their answers. You MUST have the user's answers before moving on. Do not assume, research, or fill in the blanks yourself. The user's intent drives everything — skipping this step leads to wasted work.
+Never scaffold or code without a complete spec. The questions below are the minimum the discovery skill covers in depth — use them only as a manual fallback if discovery is unavailable.
 
 **Always ask:**
 
